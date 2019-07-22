@@ -1,10 +1,14 @@
 #!/bin/bash
 
+# This script renames Git tags from the format: "my-project-1.0" to "1.0"
+
 # Array of GitHub repository URLs
-declare -a repoArray=("...proj1.git")
+declare -a repoArray=("...my-project1.git"
+"...my-project2.git")
 
 # Array of GitHub repository names
-declare -a nameArray=("proj1")
+declare -a nameArray=("my-project1"
+"my-project2")
 
 # Array that will store the names of the tags
 declare -a tagArray=()
@@ -39,33 +43,40 @@ do
   # Loop through each tag
   for t in "${tagArray[@]}"
   do
-    echo '' # Identify the commit/object ID of the tag
-    echo '[RUN] git rev-parse '$t
-    commitID=($(git rev-parse $t))
-    echo 'Commit ID for' $t 'is' $commitID
-
-    echo '' # Delete the tag
-    echo '[RUN] git tag -d '$t
-    git tag -d $t
-
-    echo '' # Delete tag from remote
-    echo '[RUN] git push origin :refs/tags/'$t
-    git push origin :refs/tags/$t
-
-    echo '' # Update local refs
-    echo '[RUN] git fetch --prune --prune-tags'
-    git fetch --prune --prune-tags
-
-    echo '' # Create the new (renamed) tag
+    # Determine length of the name of the tag
     tagNameLength=${#t}
-    newTagName=$(echo $t | cut -c$nameLength-$tagNameLength)
-    echo 'New Tag Name:' $newTagName '(Original Name Length:'$nameLength 'Tag Name Length:'$tagNameLength')'
-    echo '[RUN] git tag -a' $newTagName '-m "Renaming"' $commitID
-    git tag -a $newTagName '-m "Renaming"' $commitID
+    if [ $tagNameLength -lt $nameLength ]
+    then
+      echo ''
+      echo 'Not processing tag: '$t
+    else
+      echo '' # Identify the commit/object ID of the tag
+      echo '[RUN] git rev-parse '$t
+      commitID=($(git rev-parse $t))
+      echo 'Commit ID for' $t 'is' $commitID
 
-    echo '' # Push tags to remote
-    echo '[RUN] git push --tags'
-    git push --tags
+      echo '' # Delete the tag
+      echo '[RUN] git tag -d '$t
+      git tag -d $t
+
+      echo '' # Delete tag from remote
+      echo '[RUN] git push origin :refs/tags/'$t
+      git push origin :refs/tags/$t
+
+      echo '' # Update local refs
+      echo '[RUN] git fetch --prune --prune-tags'
+      git fetch --prune --prune-tags
+
+      echo '' # Create the new (renamed) tag
+      newTagName=$(echo $t | cut -c$nameLength-$tagNameLength)
+      echo 'New Tag Name:' $newTagName '(Original Name Length:'$nameLength 'Tag Name Length:'$tagNameLength')'
+      echo '[RUN] git tag -a' $newTagName '-m "Renaming"' $commitID
+      git tag -a $newTagName '-m "Renaming"' $commitID
+
+      echo '' # Push tags to remote
+      echo '[RUN] git push --tags'
+      git push --tags
+    fi
   done
 
   echo ''
